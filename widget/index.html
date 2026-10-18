@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Chatbot</title>
+  <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #060913;
+      min-height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #wave-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      display: block;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Glowing 3D Curved Neon Vortex / Particle Cavern Animation -->
+  <canvas id="wave-canvas"></canvas>
+
+  <script>
+    (function () {
+      const canvas = document.getElementById('wave-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+
+      let width = 0;
+      let height = 0;
+      let dpr = 1;
+
+      // Mouse tracking for subtle 3D parallax tilt
+      let mouseX = 0;
+      let mouseY = 0;
+      let targetMouseX = 0;
+      let targetMouseY = 0;
+
+      function resize() {
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(dpr, dpr);
+      }
+
+      window.addEventListener('resize', resize);
+      resize();
+
+      window.addEventListener('pointermove', (e) => {
+        targetMouseX = (e.clientX / width - 0.5) * 40;
+        targetMouseY = (e.clientY / height - 0.5) * 28;
+      });
+
+      // Moderate animation speed parameter (relaxed, smooth, organic flow)
+      let time = 0;
+      const SPEED = 0.007;
+
+      // Resolution: 92 streamline samples along the curve, 38 radial layers fanning outward
+      const STEPS_T = 92;
+      const LAYERS_V = 38;
+
+      // Cubic Bezier curve defining the inner spine of the C-vortex
+      function getSpine(t) {
+        const u = 1 - t;
+        // Calibrated control points matching user photo:
+        // P0: Top-right entrance
+        // P1: Upper curve sweeping inward
+        // P2: Tight apex bend on bottom-left with warm golden core
+        // P3: Sweeping bottom-right exit
+        const p0x = width * 1.02, p0y = height * 0.03;
+        const p1x = width * 0.28, p1y = height * 0.12;
+        const p2x = width * 0.16, p2y = height * 0.78;
+        const p3x = width * 1.05, p3y = height * 0.94;
+
+        const x = u*u*u * p0x + 3*u*u*t * p1x + 3*u*t*t * p2x + t*t*t * p3x;
+        const y = u*u*u * p0y + 3*u*u*t * p1x + 3*u*t*t * p2y + t*t*t * p3y;
+
+        // Tangent vector
+        const dx = 3*u*u * (p1x - p0x) + 6*u*t * (p2x - p1x) + 3*t*t * (p3x - p2x);
+        const dy = 3*u*u * (p1y - p0y) + 6*u*t * (p2y - p1y) + 3*t*t * (p3y - p2y);
+        const len = Math.hypot(dx, dy) || 1;
+
+        // Outward normal vector (pointing out toward top-left / outer fan)
+        const nx = -dy / len;
+        const ny = dx / len;
+
+        return { x, y, nx, ny };
+      }
+
+      function drawAuraGlows(apexPoint, topPoint) {
+        // Deep space midnight indigo/navy gradient
+        const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+        bgGrad.addColorStop(0, '#040718');
+        bgGrad.addColorStop(0.5, '#030513');
+        bgGrad.addColorStop(1, '#02030e');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, width, height);
+
+        // 1. Warm Golden Amber Core Aura at the apex bend
+        if (apexPoint) {
+          const gApex = ctx.createRadialGradient(
+            apexPoint.x + 30, apexPoint.y - 20, 10,
+            apexPoint.x + 30, apexPoint.y - 20, width * 0.38
+          );
+          gApex.addColorStop(0, 'rgba(255, 175, 75, 0.42)');
+          gApex.addColorStop(0.25, 'rgba(235, 70, 120, 0.20)');
+          gApex.addColorStop(0.55, 'rgba(110, 30, 150, 0.07)');
+          gApex.addColorStop(1, 'rgba(3, 5, 19, 0)');
+          ctx.fillStyle = gApex;
+          ctx.fillRect(0, 0, width, height);
+        }
+
+        // 2. Electric Cyan Aura at the top curve
+        if (topPoint) {
+          const gTop = ctx.createRadialGradient(
+            topPoint.x, topPoint.y, 10,
+            topPoint.x, topPoint.y, width * 0.35
+          );
+          gTop.addColorStop(0, 'rgba(0, 220, 255, 0.30)');
+          gTop.addColorStop(0.32, 'rgba(0, 120, 255, 0.12)');
+          gTop.addColorStop(0.7, 'rgba(5, 10, 35, 0)');
+          ctx.fillStyle = gTop;
+          ctx.fillRect(0, 0, width, height);
+        }
+
+        // 3. Ambient blue vignette in top-left
+        const gTopLeft = ctx.createRadialGradient(
+          width * 0.08, height * 0.08, 10,
+          width * 0.08, height * 0.08, width * 0.45
+        );
+        gTopLeft.addColorStop(0, 'rgba(18, 45, 140, 0.25)');
+        gTopLeft.addColorStop(1, 'rgba(3, 5, 19, 0)');
+        ctx.fillStyle = gTopLeft;
+        ctx.fillRect(0, 0, width, height);
+      }
+
+      function render() {
+        time += SPEED;
+
+        // Damped mouse parallax
+        mouseX += (targetMouseX - mouseX) * 0.04;
+        mouseY += (targetMouseY - mouseY) * 0.04;
+
+        // Sample key landmarks for atmospheric glows
+        const apexSample = getSpine(0.66);
+        const topSample = getSpine(0.32);
+        drawAuraGlows(apexSample, topSample);
+
+        const particles = [];
+        const fov = 580;
+
+        // Generate the 3D vortex particles along curved streamlines
+        for (let i = 0; i < STEPS_T; i++) {
+          const t = i / (STEPS_T - 1); // 0 (top-right) to 1 (bottom-right)
+          const spine = getSpine(t);
+
+          // Fanning width: narrows at the entrance/exit, expands widely along the left arc
+          const fanWidth = (height * 0.45) * (0.65 + Math.sin(t * Math.PI) * 0.85);
+
+          // Gentle moderate wave phase along streamline
+          const wavePhase = t * 9.5 - time * 2.2;
+          const slowDrift = Math.sin(t * 3.5 + time * 0.9) * 12;
+
+          for (let j = 0; j < LAYERS_V; j++) {
+            const v = j / (LAYERS_V - 1); // 0 (inner rim) to 1 (outer fan boundary)
+
+            // Nonlinear spacing: denser near inner glowing rim, spreading out gracefully
+            const vCurve = Math.pow(v, 1.25);
+            const offsetDist = vCurve * fanWidth;
+
+            // Subtle harmonic undulation across the mesh
+            const harmonic = Math.sin(wavePhase + v * 3.2) * (14 * (1 - v * 0.4)) + slowDrift;
+
+            // 3D funnel curvature (depth into screen)
+            // Inner rim is recessed into depth, outer fan curves towards camera
+            const pz = -Math.cos(t * Math.PI * 0.9) * 180 + (1 - v) * 120 + Math.sin(wavePhase * 0.7) * 40;
+
+            const px = spine.x + spine.nx * (offsetDist + harmonic);
+            const py = spine.y + spine.ny * (offsetDist + harmonic);
+
+            // 3D perspective projection
+            const camZ = pz + 650;
+            if (camZ <= 40) continue;
+
+            const scale = fov / camZ;
+            const screenX = px + mouseX * (0.6 + (1 - v) * 0.4);
+            const screenY = py + mouseY * (0.6 + (1 - v) * 0.4);
+
+            // Cull far off-screen particles
+            if (screenX < -60 || screenX > width + 60 || screenY < -60 || screenY > height + 60) {
+              continue;
+            }
+
+            // Dot size: larger at glowing inner rim and closer scale, smaller at outer perimeter
+            const size = Math.max(0.7, (1.1 + (1 - v) * 1.5) * scale * 1.85);
+
+            // Base opacity: inner rim is crisp and brilliant; outer blue field fades gently
+            let alpha = Math.min(1.0, Math.max(0.12, (1 - v * 0.65) * (0.75 + Math.sin(wavePhase) * 0.15)));
+
+            // Color synthesis accurately matching the reference image:
+            let r, g, b;
+            let isHighlight = false;
+
+            if (t >= 0.50 && t <= 0.76) {
+              // --- ZONE 1: WARM GOLDEN AMBER / PEACH / WHITE APEX CORE ---
+              const apexDist = Math.abs(t - 0.63) / 0.13; // 0 at core apex
+              if (v < 0.35) {
+                // Incandescent White to Hot Golden Amber on inner rim
+                const blend = Math.max(0, 1 - apexDist);
+                r = Math.round(255);
+                g = Math.round(180 + blend * 65);
+                b = Math.round(90 + blend * 140);
+                alpha = Math.min(1.0, alpha * 1.35);
+                isHighlight = true;
+              } else if (v < 0.65) {
+                // Warm Coral / Peachy Pink mid-layer
+                r = Math.round(245 - v * 40);
+                g = Math.round(130 - v * 40);
+                b = Math.round(160 + v * 50);
+              } else {
+                // Outer transition to deep purple-blue
+                r = Math.round(130 - v * 80);
+                g = Math.round(80 - v * 40);
+                b = Math.round(210);
+              }
+            } else if (t >= 0.40 && t < 0.50) {
+              // --- ZONE 2A: VIBRANT NEON MAGENTA / VIOLET TRANSITION ---
+              const mNorm = (t - 0.40) / 0.10;
+              r = Math.round(120 + mNorm * 110);
+              g = Math.round(160 - mNorm * 60);
+              b = Math.round(245 - mNorm * 30);
+              if (v < 0.28) {
+                alpha = Math.min(1.0, alpha * 1.2);
+                isHighlight = true;
+              }
+            } else if (t >= 0.76 && t <= 0.88) {
+              // --- ZONE 2B: LOWER BEND PURPLE / COBALT TRANSITION ---
+              const bNorm = (t - 0.76) / 0.12;
+              r = Math.round(210 - bNorm * 150);
+              g = Math.round(90 + bNorm * 20);
+              b = Math.round(210 + bNorm * 35);
+            } else if (t >= 0.18 && t < 0.40) {
+              // --- ZONE 3: BRILLIANT ELECTRIC CYAN / TURQUOISE CREST ---
+              const cNorm = Math.abs(t - 0.29) / 0.11;
+              if (v < 0.32) {
+                // Glowing Cyan-White on inner edge
+                r = Math.round(20 + (1 - cNorm) * 160);
+                g = Math.round(225 + (1 - cNorm) * 30);
+                b = 255;
+                alpha = Math.min(1.0, alpha * 1.3);
+                isHighlight = true;
+              } else {
+                // Vibrant Sky Blue to Royal Blue
+                r = Math.round(10 + v * 40);
+                g = Math.round(180 - v * 90);
+                b = Math.round(255 - v * 40);
+              }
+            } else {
+              // --- ZONE 4: OUTER FIELD & FADING BLUE TAILS ---
+              r = Math.round(20 + (1 - v) * 30);
+              g = Math.round(60 + (1 - v) * 70);
+              b = Math.round(180 + (1 - v) * 60);
+              alpha *= 0.65; // Soft receding particle mist
+            }
+
+            particles.push({
+              x: screenX,
+              y: screenY,
+              size: size,
+              camZ: camZ,
+              color: `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(3)})`,
+              isHighlight: isHighlight && scale > 0.88
+            });
+          }
+        }
+
+        // Sort by depth (back to front) for perfect 3D depth layering
+        particles.sort((a, b) => b.camZ - a.camZ);
+
+        // Render particles
+        for (let p = 0; p < particles.length; p++) {
+          const pt = particles[p];
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
+          ctx.fillStyle = pt.color;
+
+          if (pt.isHighlight) {
+            ctx.shadowBlur = pt.size * 3.2;
+            ctx.shadowColor = pt.color;
+          } else {
+            ctx.shadowBlur = 0;
+          }
+
+          ctx.fill();
+        }
+
+        ctx.shadowBlur = 0;
+        requestAnimationFrame(render);
+      }
+
+      requestAnimationFrame(render);
+    })();
+  </script>
+
+  <!-- Chatbot Widget Entrypoint -->
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
+</html>
